@@ -1,1 +1,1 @@
-# AgroConnect
+# AgroConnect: Farmer & Crop Information Portal
