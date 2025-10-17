@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - AgroConnect</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html" class="logo">🌾 AgroConnect Admin</a>
+            <ul class="nav-links">
+                <li><a href="admin_dashboard.html" class="active">Admin Dashboard</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container dashboard">
+        <aside class="sidebar">
+            <h3>Admin Menu</h3>
+            <ul>
+                <li><a href="#dashboard" class="nav-item active" data-section="dashboard">Dashboard</a></li>
+                <li><a href="#farmers" class="nav-item" data-section="farmers">Manage Farmers</a></li>
+                <li><a href="#crops" class="nav-item" data-section="crops">Manage Crop Posts</a></li>
+                <li><a href="#blocked" class="nav-item" data-section="blocked">Blocked Users</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section">
+                <div class="welcome-banner">
+                    <h2>Admin Dashboard</h2>
+                    <p>Manage farmers, crops, and moderate content</p>
+                </div>
+
+                <h3>Overview</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                    <div class="card" style="text-align: center;">
+                        <h4 style="color: #0066CC;">Total Farmers</h4>
+                        <p style="font-size: 2.5rem; font-weight: 700; color: #333;" id="total-farmers">0</p>
+                    </div>
+                    <div class="card" style="text-align: center;">
+                        <h4 style="color: #059669;">Total Crop Posts</h4>
+                        <p style="font-size: 2.5rem; font-weight: 700; color: #333;" id="total-crops">0</p>
+                    </div>
+                    <div class="card" style="text-align: center;">
+                        <h4 style="color: #DC2626;">Blocked Farmers</h4>
+                        <p style="font-size: 2.5rem; font-weight: 700; color: #333;" id="blocked-farmers">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Manage Farmers Section -->
+            <section id="farmers" class="content-section hidden">
+                <h3>Manage Farmers</h3>
+                
+                <div id="farmers-container" class="table-container"></div>
+            </section>
+
+            <!-- Manage Crops Section -->
+            <section id="crops" class="content-section hidden">
+                <h3>Manage Crop Posts</h3>
+                
+                <div id="crops-container" class="table-container"></div>
+            </section>
+
+            <!-- Blocked Users Section -->
+            <section id="blocked" class="content-section hidden">
+                <h3>Blocked Users</h3>
+                
+                <div id="blocked-container" class="table-container"></div>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 AgroConnect - Empowering Farmers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/validation.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        let allFarmers = [];
+        let allCrops = [];
+
+        // Initialize admin dashboard
+        async function initAdminDashboard() {
+            await checkAdminSession();
+            loadFarmers();
+            loadCrops();
+        }
+
+        // Load all farmers
+        async function loadFarmers() {
+            try {
+                const response = await fetch('php/admin_get_farmers.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allFarmers = data.farmers;
+                    displayFarmers(data.farmers);
+                    displayBlockedFarmers(data.farmers.filter(f => f.is_blocked));
+                    updateDashboardStats();
+                }
+            } catch (error) {
+                console.error('Load farmers error:', error);
+            }
+        }
+
+        // Display farmers
+        function displayFarmers(farmers) {
+            const container = document.getElementById('farmers-container');
+            
+            if (farmers.length === 0) {
+                container.innerHTML = '<p class="text-center">No farmers registered yet.</p>';
+                return;
+            }
+            
+            const activeFarmers = farmers.filter(f => !f.is_blocked);
+            
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Region</th>
+                            <th>Soil Type</th>
+                            <th>Area</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${activeFarmers.map(farmer => `
+                            <tr>
+                                <td>${farmer.name}</td>
+                                <td>${farmer.email}</td>
+                                <td>${farmer.region}</td>
+                                <td>${farmer.soil_type}</td>
+                                <td>${farmer.area} acres</td>
+                                <td><span class="badge badge-success">Active</span></td>
+                                <td class="actions">
+                                    <button class="btn btn-small btn-danger" onclick="blockFarmer(${farmer.farmer_id})">Block</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Display blocked farmers
+        function displayBlockedFarmers(farmers) {
+            const container = document.getElementById('blocked-container');
+            
+            if (farmers.length === 0) {
+                container.innerHTML = '<p class="text-center">No blocked farmers.</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Region</th>
+                            <th>Blocked On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${farmers.map(farmer => `
+                            <tr>
+                                <td>${farmer.name}</td>
+                                <td>${farmer.email}</td>
+                                <td>${farmer.region}</td>
+                                <td>${formatDate(farmer.created_at)}</td>
+                                <td class="actions">
+                                    <button class="btn btn-small btn-success" onclick="unblockFarmer(${farmer.farmer_id})">Unblock</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Load all crops
+        async function loadCrops() {
+            try {
+                const response = await fetch('php/admin_get_crops.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allCrops = data.crops;
+                    displayCrops(data.crops);
+                    updateDashboardStats();
+                }
+            } catch (error) {
+                console.error('Load crops error:', error);
+            }
+        }
+
+        // Display crops
+        function displayCrops(crops) {
+            const container = document.getElementById('crops-container');
+            
+            if (crops.length === 0) {
+                container.innerHTML = '<p class="text-center">No crop posts yet.</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Crop Name</th>
+                            <th>Farmer</th>
+                            <th>Region</th>
+                            <th>Investment</th>
+                            <th>Turnover</th>
+                            <th>Posted On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${crops.map(crop => `
+                            <tr>
+                                <td>${crop.crop_name}</td>
+                                <td>${crop.farmer_name}<br><small style="color: #666;">${crop.farmer_email}</small></td>
+                                <td>${crop.region}</td>
+                                <td>${formatCurrency(crop.investment)}</td>
+                                <td>${formatCurrency(crop.turnover)}</td>
+                                <td>${formatDate(crop.created_at)}</td>
+                                <td class="actions">
+                                    <button class="btn btn-small btn-danger" onclick="adminDeleteCrop(${crop.crop_id})">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Update dashboard stats
+        function updateDashboardStats() {
+            document.getElementById('total-farmers').textContent = allFarmers.length;
+            document.getElementById('total-crops').textContent = allCrops.length;
+            document.getElementById('blocked-farmers').textContent = allFarmers.filter(f => f.is_blocked).length;
+        }
+
+        // Block farmer
+        async function blockFarmer(farmerId) {
+            if (!window.confirm('Are you sure you want to block this farmer?')) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('farmer_id', farmerId);
+                
+                const response = await fetch('php/admin_block_farmer.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    loadFarmers();
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            } catch (error) {
+                showAlert('An error occurred.', 'error');
+                console.error('Block farmer error:', error);
+            }
+        }
+
+        // Unblock farmer
+        async function unblockFarmer(farmerId) {
+            if (!window.confirm('Are you sure you want to unblock this farmer?')) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('farmer_id', farmerId);
+                
+                const response = await fetch('php/admin_unblock_farmer.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    loadFarmers();
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            } catch (error) {
+                showAlert('An error occurred.', 'error');
+                console.error('Unblock farmer error:', error);
+            }
+        }
+
+        // Delete crop
+        async function adminDeleteCrop(cropId) {
+            if (!window.confirm('Are you sure you want to delete this crop post?')) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('crop_id', cropId);
+                
+                const response = await fetch('php/admin_delete_crop.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    loadCrops();
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            } catch (error) {
+                showAlert('An error occurred.', 'error');
+                console.error('Delete crop error:', error);
+            }
+        }
+
+        // Navigation between sections
+        document.querySelectorAll('.nav-item').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Update active state
+                document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                // Show selected section
+                const section = link.dataset.section;
+                document.querySelectorAll('.content-section').forEach(s => s.classList.add('hidden'));
+                document.getElementById(section).classList.remove('hidden');
+            });
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initAdminDashboard);
+    </script>
+</body>
+</html>
+

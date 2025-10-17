@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Registration - AgroConnect</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html" class="logo">🌾 AgroConnect</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="search.html">Search Crops</a></li>
+                <li><a href="farmer_login.html">Farmer Login</a></li>
+                <li><a href="admin_login.html">Admin</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="card form-container">
+            <h2 style="color: #0066CC; text-align: center; margin-bottom: 2rem;">Farmer Registration</h2>
+            
+            <form id="registerForm" data-redirect-url="farmer_login.html">
+                <div class="form-group">
+                    <label for="name">Full Name *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password *</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="region">Region *</label>
+                    <input type="text" id="region" name="region" placeholder="e.g., Punjab, Maharashtra" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="soil_type">Soil Type *</label>
+                    <select id="soil_type" name="soil_type" required>
+                        <option value="">Select Soil Type</option>
+                        <option value="Alluvial">Alluvial</option>
+                        <option value="Black Cotton">Black Cotton</option>
+                        <option value="Red">Red</option>
+                        <option value="Laterite">Laterite</option>
+                        <option value="Desert">Desert</option>
+                        <option value="Mountain">Mountain</option>
+                        <option value="Clay">Clay</option>
+                        <option value="Sandy">Sandy</option>
+                        <option value="Loamy">Loamy</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="area">Farm Area (in acres) *</label>
+                    <input type="number" id="area" name="area" step="0.01" min="0.01" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
+            </form>
+
+            <p style="text-align: center; margin-top: 1.5rem;">
+                Already have an account? <a href="farmer_login.html" style="color: #0066CC; font-weight: 600;">Login here</a>
+            </p>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 AgroConnect - Empowering Farmers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/validation.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('registerForm');
+            
+            // Add real-time validation
+            addRealTimeValidation(form);
+            
+            // Handle form submission
+            handleFormSubmit(form, validateFarmerRegistration, 'php/register_farmer.php');
+        });
+    </script>
+</body>
+</html>
+

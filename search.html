@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Crops - AgroConnect</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html" class="logo">🌾 AgroConnect</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="search.html" class="active">Search Crops</a></li>
+                <li><a href="farmer_login.html">Farmer Login</a></li>
+                <li><a href="admin_login.html">Admin</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container search-section">
+        <h2 style="color: #0066CC; text-align: center; margin-bottom: 2rem;">Search Crops</h2>
+        
+        <div class="search-filters">
+            <h3 style="margin-bottom: 1.5rem;">Filter by:</h3>
+            
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label for="crop_name">Crop Name</label>
+                    <input type="text" id="crop_name" placeholder="e.g., Wheat, Rice">
+                </div>
+
+                <div class="form-group">
+                    <label for="region">Region</label>
+                    <input type="text" id="region" placeholder="e.g., Punjab">
+                </div>
+
+                <div class="form-group">
+                    <label for="min_area">Minimum Area (acres)</label>
+                    <input type="number" id="min_area" step="0.01" min="0" placeholder="e.g., 5">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-primary" onclick="performSearch()">Search</button>
+                <button class="btn btn-secondary" onclick="clearSearch()">Clear Filters</button>
+            </div>
+        </div>
+
+        <div id="search-results" class="search-results"></div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 AgroConnect - Empowering Farmers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+    <script>
+        // Perform search
+        async function performSearch() {
+            const filters = {
+                crop_name: document.getElementById('crop_name').value.trim(),
+                region: document.getElementById('region').value.trim(),
+                min_area: document.getElementById('min_area').value.trim()
+            };
+
+            // Show loading
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '<div class="loading">Searching...</div>';
+
+            const data = await searchCrops(filters);
+
+            if (data.success) {
+                displaySearchResults(data.crops, 'search-results');
+            } else {
+                resultsContainer.innerHTML = '<div class="text-center"><p>An error occurred while searching.</p></div>';
+            }
+        }
+
+        // Clear search filters
+        function clearSearch() {
+            document.getElementById('crop_name').value = '';
+            document.getElementById('region').value = '';
+            document.getElementById('min_area').value = '';
+            document.getElementById('search-results').innerHTML = '';
+            
+            // Load all crops
+            performSearch();
+        }
+
+        // Load all crops on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            performSearch();
+
+            // Add debounced search on input
+            const searchInputs = ['crop_name', 'region', 'min_area'];
+            searchInputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', debounce(performSearch, 500));
+            });
+        });
+    </script>
+</body>
+</html>
+

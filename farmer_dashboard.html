@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Dashboard - AgroConnect</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html" class="logo">🌾 AgroConnect</a>
+            <ul class="nav-links">
+                <li><a href="farmer_dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container dashboard">
+        <aside class="sidebar">
+            <h3>Farmer Menu</h3>
+            <ul>
+                <li><a href="#dashboard" class="nav-item active" data-section="dashboard">Dashboard</a></li>
+                <li><a href="#add-crop" class="nav-item" data-section="add-crop">Add Crop Post</a></li>
+                <li><a href="#my-posts" class="nav-item" data-section="my-posts">My Posts</a></li>
+                <li><a href="#my-profile" class="nav-item" data-section="my-profile">My Profile</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section">
+                <div class="welcome-banner">
+                    <h2>Welcome, <span id="farmer-name"></span>!</h2>
+                    <p>Region: <span id="farmer-region"></span></p>
+                </div>
+
+                <h3>Dashboard Overview</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                    <div class="card" style="text-align: center;">
+                        <h4 style="color: #0066CC;">Total Posts</h4>
+                        <p style="font-size: 2.5rem; font-weight: 700; color: #333;" id="total-posts">0</p>
+                    </div>
+                    <div class="card" style="text-align: center;">
+                        <h4 style="color: #059669;">Total Investment</h4>
+                        <p style="font-size: 1.5rem; font-weight: 700; color: #333;" id="total-investment">₹0</p>
+                    </div>
+                    <div class="card" style="text-align: center;">
+                        <h4 style="color: #DC2626;">Total Turnover</h4>
+                        <p style="font-size: 1.5rem; font-weight: 700; color: #333;" id="total-turnover">₹0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Add Crop Section -->
+            <section id="add-crop" class="content-section hidden">
+                <h3>Add New Crop Post</h3>
+                
+                <form id="addCropForm" style="max-width: 600px;">
+                    <div class="form-group">
+                        <label for="crop_name">Crop Name *</label>
+                        <input type="text" id="crop_name" name="crop_name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="investment">Investment (₹) *</label>
+                        <input type="number" id="investment" name="investment" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="turnover">Turnover (₹) *</label>
+                        <input type="number" id="turnover" name="turnover" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description (Optional)</label>
+                        <textarea id="description" name="description" rows="4"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add Crop</button>
+                </form>
+            </section>
+
+            <!-- My Posts Section -->
+            <section id="my-posts" class="content-section hidden">
+                <h3>My Crop Posts</h3>
+                
+                <div id="crops-container" class="table-container"></div>
+            </section>
+
+            <!-- My Profile Section -->
+            <section id="my-profile" class="content-section hidden">
+                <h3>My Profile</h3>
+                
+                <form id="profileForm" style="max-width: 600px;">
+                    <div class="form-group">
+                        <label for="profile_name">Full Name *</label>
+                        <input type="text" id="profile_name" name="name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="profile_email">Email Address</label>
+                        <input type="email" id="profile_email" name="email" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="profile_region">Region *</label>
+                        <input type="text" id="profile_region" name="region" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="profile_soil_type">Soil Type *</label>
+                        <select id="profile_soil_type" name="soil_type" required>
+                            <option value="">Select Soil Type</option>
+                            <option value="Alluvial">Alluvial</option>
+                            <option value="Black Cotton">Black Cotton</option>
+                            <option value="Red">Red</option>
+                            <option value="Laterite">Laterite</option>
+                            <option value="Desert">Desert</option>
+                            <option value="Mountain">Mountain</option>
+                            <option value="Clay">Clay</option>
+                            <option value="Sandy">Sandy</option>
+                            <option value="Loamy">Loamy</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="profile_area">Farm Area (in acres) *</label>
+                        <input type="number" id="profile_area" name="area" step="0.01" min="0.01" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <!-- Edit Crop Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Crop</h3>
+                <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            
+            <form id="editCropForm">
+                <input type="hidden" id="edit_crop_id" name="crop_id">
+                
+                <div class="form-group">
+                    <label for="edit_crop_name">Crop Name *</label>
+                    <input type="text" id="edit_crop_name" name="crop_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_investment">Investment (₹) *</label>
+                    <input type="number" id="edit_investment" name="investment" step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_turnover">Turnover (₹) *</label>
+                    <input type="number" id="edit_turnover" name="turnover" step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_description">Description</label>
+                    <textarea id="edit_description" name="description" rows="4"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Update Crop</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 AgroConnect - Empowering Farmers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/validation.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        let currentCrops = [];
+
+        // Check session and load farmer info
+        async function initDashboard() {
+            const session = await protectFarmerPage();
+            
+            if (session.logged_in) {
+                document.getElementById('farmer-name').textContent = session.farmer_name;
+                document.getElementById('farmer-region').textContent = session.farmer_region;
+                
+                loadMyCrops();
+                loadProfile();
+            }
+        }
+
+        // Load farmer's crops
+        async function loadMyCrops() {
+            const data = await fetchFarmerCrops();
+            
+            if (data.success) {
+                currentCrops = data.crops;
+                displayMyCrops(data.crops);
+                updateDashboardStats(data.crops);
+            }
+        }
+
+        // Display crops in table
+        function displayMyCrops(crops) {
+            const container = document.getElementById('crops-container');
+            
+            if (crops.length === 0) {
+                container.innerHTML = '<p class="text-center">You haven\'t posted any crops yet.</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Crop Name</th>
+                            <th>Investment</th>
+                            <th>Turnover</th>
+                            <th>Posted On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${crops.map(crop => `
+                            <tr>
+                                <td>${crop.crop_name}</td>
+                                <td>${formatCurrency(crop.investment)}</td>
+                                <td>${formatCurrency(crop.turnover)}</td>
+                                <td>${formatDate(crop.created_at)}</td>
+                                <td class="actions">
+                                    <button class="btn btn-small btn-primary" onclick="editCrop(${crop.crop_id})">Edit</button>
+                                    <button class="btn btn-small btn-danger" onclick="deleteCrop(${crop.crop_id})">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Update dashboard statistics
+        function updateDashboardStats(crops) {
+            document.getElementById('total-posts').textContent = crops.length;
+            
+            const totalInvestment = crops.reduce((sum, crop) => sum + parseFloat(crop.investment), 0);
+            const totalTurnover = crops.reduce((sum, crop) => sum + parseFloat(crop.turnover), 0);
+            
+            document.getElementById('total-investment').textContent = formatCurrency(totalInvestment);
+            document.getElementById('total-turnover').textContent = formatCurrency(totalTurnover);
+        }
+
+        // Edit crop
+        function editCrop(cropId) {
+            const crop = currentCrops.find(c => c.crop_id == cropId);
+            
+            if (crop) {
+                document.getElementById('edit_crop_id').value = crop.crop_id;
+                document.getElementById('edit_crop_name').value = crop.crop_name;
+                document.getElementById('edit_investment').value = crop.investment;
+                document.getElementById('edit_turnover').value = crop.turnover;
+                document.getElementById('edit_description').value = crop.description || '';
+                
+                openModal('editModal');
+            }
+        }
+
+        // Load farmer profile
+        async function loadProfile() {
+            try {
+                const response = await fetch('php/get_farmer_profile.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const profile = data.profile;
+                    document.getElementById('profile_name').value = profile.name;
+                    document.getElementById('profile_email').value = profile.email;
+                    document.getElementById('profile_region').value = profile.region;
+                    document.getElementById('profile_soil_type').value = profile.soil_type;
+                    document.getElementById('profile_area').value = profile.area;
+                }
+            } catch (error) {
+                console.error('Load profile error:', error);
+            }
+        }
+
+        // Navigation between sections
+        document.querySelectorAll('.nav-item').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Update active state
+                document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                // Show selected section
+                const section = link.dataset.section;
+                document.querySelectorAll('.content-section').forEach(s => s.classList.add('hidden'));
+                document.getElementById(section).classList.remove('hidden');
+            });
+        });
+
+        // Handle add crop form
+        document.getElementById('addCropForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('php/add_crop.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    e.target.reset();
+                    loadMyCrops();
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            } catch (error) {
+                showAlert('An error occurred. Please try again.', 'error');
+                console.error('Add crop error:', error);
+            }
+        });
+
+        // Handle edit crop form
+        document.getElementById('editCropForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('php/edit_crop.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    closeModal('editModal');
+                    loadMyCrops();
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            } catch (error) {
+                showAlert('An error occurred. Please try again.', 'error');
+                console.error('Edit crop error:', error);
+            }
+        });
+
+        // Handle profile update
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('php/update_profile.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    
+                    // Reload to update header
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            } catch (error) {
+                showAlert('An error occurred. Please try again.', 'error');
+                console.error('Update profile error:', error);
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
+
