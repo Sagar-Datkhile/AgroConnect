@@ -81,10 +81,55 @@ function formatDate(dateString) {
     });
 }
 
-// Confirm dialog
-function confirm(message) {
-    return window.confirm(message);
+// Format time ago (e.g., "2d ago", "3mo ago", "1y ago")
+function timeAgo(dateString) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const seconds = Math.floor((now - date) / 1000);
+    
+    const intervals = {
+        year: 31536000,
+        month: 2592000,
+        week: 604800,
+        day: 86400,
+        hour: 3600,
+        minute: 60
+    };
+    
+    if (seconds < 60) {
+        return 'just now';
+    }
+    
+    if (seconds < intervals.hour) {
+        const minutes = Math.floor(seconds / intervals.minute);
+        return `${minutes}m ago`;
+    }
+    
+    if (seconds < intervals.day) {
+        const hours = Math.floor(seconds / intervals.hour);
+        return `${hours}h ago`;
+    }
+    
+    if (seconds < intervals.week) {
+        const days = Math.floor(seconds / intervals.day);
+        return `${days}d ago`;
+    }
+    
+    if (seconds < intervals.month) {
+        const weeks = Math.floor(seconds / intervals.week);
+        return `${weeks}w ago`;
+    }
+    
+    if (seconds < intervals.year) {
+        const months = Math.floor(seconds / intervals.month);
+        return `${months}mo ago`;
+    }
+    
+    const years = Math.floor(seconds / intervals.year);
+    return `${years}y ago`;
 }
+
+// Note: Using window.confirm() directly for dialogs
 
 // Show loading state
 function showLoading(element) {
@@ -146,7 +191,10 @@ function displaySearchResults(crops, containerId) {
     
     container.innerHTML = crops.map(crop => `
         <div class="crop-card">
-            <h4>${crop.crop_name}</h4>
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                <h4 style="margin: 0;">${crop.crop_name}</h4>
+                <span class="time-badge">${timeAgo(crop.created_at)}</span>
+            </div>
             <div class="info-row">
                 <strong>Farmer:</strong>
                 <span>${crop.farmer_name}</span>
@@ -190,7 +238,9 @@ async function fetchFarmerCrops() {
 
 // Delete crop
 async function deleteCrop(cropId) {
-    if (!window.confirm('Are you sure you want to delete this crop?')) {
+    console.log('Delete crop called with ID:', cropId);
+    
+    if (!confirm('Are you sure you want to delete this crop?')) {
         return;
     }
     
@@ -200,23 +250,44 @@ async function deleteCrop(cropId) {
         
         const response = await fetch('php/delete_crop.php', {
             method: 'POST',
-            body: formData
+            body: formData,
+            credentials: 'same-origin'
         });
         
+        console.log('Delete response status:', response.status);
+        
         const data = await response.json();
+        console.log('Delete response data:', data);
         
         if (data.success) {
-            showAlert(data.message, 'success');
+            // Check if showAlert is available
+            if (typeof showAlert === 'function') {
+                showAlert(data.message, 'success');
+            } else {
+                alert(data.message);
+            }
+            
             // Reload crops
             if (typeof loadMyCrops === 'function') {
                 loadMyCrops();
+            } else {
+                // Fallback: reload the page
+                window.location.reload();
             }
         } else {
-            showAlert(data.message, 'error');
+            if (typeof showAlert === 'function') {
+                showAlert(data.message, 'error');
+            } else {
+                alert(data.message);
+            }
         }
     } catch (error) {
-        showAlert('An error occurred while deleting the crop.', 'error');
         console.error('Delete error:', error);
+        if (typeof showAlert === 'function') {
+            showAlert('An error occurred while deleting the crop.', 'error');
+        } else {
+            alert('An error occurred while deleting the crop.');
+        }
     }
 }
 
@@ -239,9 +310,34 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Logout function
-function logout() {
-    if (window.confirm('Are you sure you want to logout?')) {
-        window.location.href = 'php/logout.php';
+async function logout(event) {
+    if (event) {
+        event.preventDefault();
     }
+    
+    if (window.confirm('Are you sure you want to logout?')) {
+        try {
+            const response = await fetch('php/logout.php', {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                // Clear any local storage/session storage if used
+                sessionStorage.clear();
+                // Redirect to home page after logout
+                window.location.href = 'index.html';
+            } else {
+                console.error('Logout failed:', data);
+                window.location.href = 'index.html';
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+            // Redirect anyway
+            window.location.href = 'index.html';
+        }
+    }
+    return false;
 }
 

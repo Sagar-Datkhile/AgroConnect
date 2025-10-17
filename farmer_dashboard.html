@@ -9,10 +9,10 @@
 <body>
     <header>
         <nav>
-            <a href="index.html" class="logo">🌾 AgroConnect</a>
+            <a href="#" class="logo" onclick="event.preventDefault()">🌾 AgroConnect</a>
             <ul class="nav-links">
                 <li><a href="farmer_dashboard.html" class="active">Dashboard</a></li>
-                <li><a href="#" onclick="logout()">Logout</a></li>
+                <li><a href="#" onclick="return logout(event)" class="logout-btn">Logout</a></li>
             </ul>
         </nav>
     </header>
@@ -25,7 +25,6 @@
                 <li><a href="#add-crop" class="nav-item" data-section="add-crop">Add Crop Post</a></li>
                 <li><a href="#my-posts" class="nav-item" data-section="my-posts">My Posts</a></li>
                 <li><a href="#my-profile" class="nav-item" data-section="my-profile">My Profile</a></li>
-                <li><a href="#" onclick="logout()">Logout</a></li>
             </ul>
         </aside>
 
@@ -87,6 +86,10 @@
             <section id="my-posts" class="content-section hidden">
                 <h3>My Crop Posts</h3>
                 
+                <div class="form-group" style="max-width: 400px; margin-bottom: 1.5rem;">
+                    <input type="text" id="myPostsSearchInput" placeholder="Search by crop name, investment, or turnover..." onkeyup="filterMyPosts()">
+                </div>
+                
                 <div id="crops-container" class="table-container"></div>
             </section>
 
@@ -114,15 +117,13 @@
                         <label for="profile_soil_type">Soil Type *</label>
                         <select id="profile_soil_type" name="soil_type" required>
                             <option value="">Select Soil Type</option>
-                            <option value="Alluvial">Alluvial</option>
-                            <option value="Black Cotton">Black Cotton</option>
-                            <option value="Red">Red</option>
-                            <option value="Laterite">Laterite</option>
-                            <option value="Desert">Desert</option>
-                            <option value="Mountain">Mountain</option>
-                            <option value="Clay">Clay</option>
-                            <option value="Sandy">Sandy</option>
-                            <option value="Loamy">Loamy</option>
+                            <option value="River Soil (Alluvial Soil)">River Soil (Alluvial Soil)</option>
+                            <option value="Black Cotton Soil (Black Soil)">Black Cotton Soil (Black Soil)</option>
+                            <option value="Red Earth Soil (Red Soil)">Red Earth Soil (Red Soil)</option>
+                            <option value="Rainforest Soil (Laterite Soil)">Rainforest Soil (Laterite Soil)</option>
+                            <option value="Desert Sand Soil (Desert Soil)">Desert Sand Soil (Desert Soil)</option>
+                            <option value="Hill Soil (Mountain Soil)">Hill Soil (Mountain Soil)</option>
+                            <option value="Salty Soil (Saline Soil)">Salty Soil (Saline Soil)</option>
                         </select>
                     </div>
 
@@ -218,7 +219,7 @@
             }
             
             container.innerHTML = `
-                <table>
+                <table id="myPostsTable">
                     <thead>
                         <tr>
                             <th>Crop Name</th>
@@ -244,6 +245,28 @@
                     </tbody>
                 </table>
             `;
+        }
+
+        // Filter my posts based on search input
+        function filterMyPosts() {
+            const searchInput = document.getElementById('myPostsSearchInput').value.toLowerCase();
+            const table = document.getElementById('myPostsTable');
+            
+            if (!table) return;
+            
+            const tbody = table.querySelector('tbody');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const text = row.textContent.toLowerCase();
+                
+                if (text.includes(searchInput)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
         }
 
         // Update dashboard statistics

@@ -9,10 +9,10 @@
 <body>
     <header>
         <nav>
-            <a href="index.html" class="logo">🌾 AgroConnect Admin</a>
+            <a href="#" class="logo" onclick="event.preventDefault()">🌾 AgroConnect</a>
             <ul class="nav-links">
                 <li><a href="admin_dashboard.html" class="active">Admin Dashboard</a></li>
-                <li><a href="#" onclick="logout()">Logout</a></li>
+                <li><a href="#" onclick="return logout(event)" class="logout-btn">Logout</a></li>
             </ul>
         </nav>
     </header>
@@ -25,7 +25,7 @@
                 <li><a href="#farmers" class="nav-item" data-section="farmers">Manage Farmers</a></li>
                 <li><a href="#crops" class="nav-item" data-section="crops">Manage Crop Posts</a></li>
                 <li><a href="#blocked" class="nav-item" data-section="blocked">Blocked Users</a></li>
-                <li><a href="#" onclick="logout()">Logout</a></li>
+                <li><a href="#deleted" class="nav-item" data-section="deleted">Recently Deleted Posts</a></li>
             </ul>
         </aside>
 
@@ -58,12 +58,20 @@
             <section id="farmers" class="content-section hidden">
                 <h3>Manage Farmers</h3>
                 
+                <div class="form-group" style="max-width: 400px; margin-bottom: 1.5rem;">
+                    <input type="text" id="farmerSearchInput" placeholder="Search by name, email, or region..." onkeyup="filterFarmers()">
+                </div>
+                
                 <div id="farmers-container" class="table-container"></div>
             </section>
 
             <!-- Manage Crops Section -->
             <section id="crops" class="content-section hidden">
                 <h3>Manage Crop Posts</h3>
+                
+                <div class="form-group" style="max-width: 400px; margin-bottom: 1.5rem;">
+                    <input type="text" id="cropSearchInput" placeholder="Search by crop name, farmer, or region..." onkeyup="filterCrops()">
+                </div>
                 
                 <div id="crops-container" class="table-container"></div>
             </section>
@@ -73,6 +81,14 @@
                 <h3>Blocked Users</h3>
                 
                 <div id="blocked-container" class="table-container"></div>
+            </section>
+
+            <!-- Recently Deleted Posts Section -->
+            <section id="deleted" class="content-section hidden">
+                <h3>Recently Deleted Posts</h3>
+                <p style="color: #666; margin-bottom: 1rem;">Posts deleted in the last 30 days</p>
+                
+                <div id="deleted-container" class="table-container"></div>
             </section>
         </main>
     </div>
@@ -88,12 +104,16 @@
     <script>
         let allFarmers = [];
         let allCrops = [];
+        let deletedCrops = [];
+        let filteredFarmers = [];
+        let filteredCrops = [];
 
         // Initialize admin dashboard
         async function initAdminDashboard() {
             await checkAdminSession();
             loadFarmers();
             loadCrops();
+            loadDeletedCrops();
         }
 
         // Load all farmers
@@ -105,7 +125,7 @@
                 if (data.success) {
                     allFarmers = data.farmers;
                     displayFarmers(data.farmers);
-                    displayBlockedFarmers(data.farmers.filter(f => f.is_blocked));
+                    displayBlockedFarmers(data.farmers.filter(f => f.is_blocked == 1 || f.is_blocked === '1'));
                     updateDashboardStats();
                 }
             } catch (error) {
@@ -122,10 +142,16 @@
                 return;
             }
             
-            const activeFarmers = farmers.filter(f => !f.is_blocked);
+            const activeFarmers = farmers.filter(f => f.is_blocked != 1 && f.is_blocked !== '1');
+            filteredFarmers = activeFarmers; // Store for search
+            
+            if (activeFarmers.length === 0) {
+                container.innerHTML = '<p class="text-center">No active farmers found.</p>';
+                return;
+            }
             
             container.innerHTML = `
-                <table>
+                <table id="farmersTable">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -154,6 +180,28 @@
                     </tbody>
                 </table>
             `;
+        }
+
+        // Filter farmers based on search input
+        function filterFarmers() {
+            const searchInput = document.getElementById('farmerSearchInput').value.toLowerCase();
+            const table = document.getElementById('farmersTable');
+            
+            if (!table) return;
+            
+            const tbody = table.querySelector('tbody');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const text = row.textContent.toLowerCase();
+                
+                if (text.includes(searchInput)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
         }
 
         // Display blocked farmers
@@ -218,8 +266,10 @@
                 return;
             }
             
+            filteredCrops = crops; // Store for search
+            
             container.innerHTML = `
-                <table>
+                <table id="cropsTable">
                     <thead>
                         <tr>
                             <th>Crop Name</th>
@@ -250,16 +300,92 @@
             `;
         }
 
+        // Filter crops based on search input
+        function filterCrops() {
+            const searchInput = document.getElementById('cropSearchInput').value.toLowerCase();
+            const table = document.getElementById('cropsTable');
+            
+            if (!table) return;
+            
+            const tbody = table.querySelector('tbody');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const text = row.textContent.toLowerCase();
+                
+                if (text.includes(searchInput)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        }
+
+        // Load deleted crops
+        async function loadDeletedCrops() {
+            try {
+                const response = await fetch('php/admin_get_deleted_crops.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    deletedCrops = data.crops;
+                    displayDeletedCrops(data.crops);
+                }
+            } catch (error) {
+                console.error('Load deleted crops error:', error);
+            }
+        }
+
+        // Display deleted crops
+        function displayDeletedCrops(crops) {
+            const container = document.getElementById('deleted-container');
+            
+            if (crops.length === 0) {
+                container.innerHTML = '<p class="text-center">No recently deleted posts.</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Crop Name</th>
+                            <th>Farmer</th>
+                            <th>Region</th>
+                            <th>Investment</th>
+                            <th>Turnover</th>
+                            <th>Deleted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${crops.map(crop => `
+                            <tr style="opacity: 0.7;">
+                                <td>${crop.crop_name}</td>
+                                <td>${crop.farmer_name}<br><small style="color: #666;">${crop.farmer_email}</small></td>
+                                <td>${crop.region}</td>
+                                <td>${formatCurrency(crop.investment)}</td>
+                                <td>${formatCurrency(crop.turnover)}</td>
+                                <td><span class="time-badge" style="background: #FEE2E2; color: #DC2626;">${timeAgo(crop.deleted_at)}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
         // Update dashboard stats
         function updateDashboardStats() {
             document.getElementById('total-farmers').textContent = allFarmers.length;
             document.getElementById('total-crops').textContent = allCrops.length;
-            document.getElementById('blocked-farmers').textContent = allFarmers.filter(f => f.is_blocked).length;
+            document.getElementById('blocked-farmers').textContent = allFarmers.filter(f => f.is_blocked == 1 || f.is_blocked === '1').length;
         }
 
         // Block farmer
         async function blockFarmer(farmerId) {
-            if (!window.confirm('Are you sure you want to block this farmer?')) {
+            console.log('Block farmer called with ID:', farmerId);
+            
+            if (!confirm('Are you sure you want to block this farmer?')) {
                 return;
             }
             
@@ -269,26 +395,44 @@
                 
                 const response = await fetch('php/admin_block_farmer.php', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'same-origin'
                 });
                 
+                console.log('Block response status:', response.status);
+                
                 const data = await response.json();
+                console.log('Block response data:', data);
                 
                 if (data.success) {
-                    showAlert(data.message, 'success');
+                    if (typeof showAlert === 'function') {
+                        showAlert(data.message, 'success');
+                    } else {
+                        alert(data.message);
+                    }
                     loadFarmers();
                 } else {
-                    showAlert(data.message, 'error');
+                    if (typeof showAlert === 'function') {
+                        showAlert(data.message, 'error');
+                    } else {
+                        alert(data.message);
+                    }
                 }
             } catch (error) {
-                showAlert('An error occurred.', 'error');
                 console.error('Block farmer error:', error);
+                if (typeof showAlert === 'function') {
+                    showAlert('An error occurred while blocking the farmer.', 'error');
+                } else {
+                    alert('An error occurred while blocking the farmer.');
+                }
             }
         }
 
         // Unblock farmer
         async function unblockFarmer(farmerId) {
-            if (!window.confirm('Are you sure you want to unblock this farmer?')) {
+            console.log('Unblock farmer called with ID:', farmerId);
+            
+            if (!confirm('Are you sure you want to unblock this farmer?')) {
                 return;
             }
             
@@ -298,26 +442,44 @@
                 
                 const response = await fetch('php/admin_unblock_farmer.php', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'same-origin'
                 });
                 
+                console.log('Unblock response status:', response.status);
+                
                 const data = await response.json();
+                console.log('Unblock response data:', data);
                 
                 if (data.success) {
-                    showAlert(data.message, 'success');
+                    if (typeof showAlert === 'function') {
+                        showAlert(data.message, 'success');
+                    } else {
+                        alert(data.message);
+                    }
                     loadFarmers();
                 } else {
-                    showAlert(data.message, 'error');
+                    if (typeof showAlert === 'function') {
+                        showAlert(data.message, 'error');
+                    } else {
+                        alert(data.message);
+                    }
                 }
             } catch (error) {
-                showAlert('An error occurred.', 'error');
                 console.error('Unblock farmer error:', error);
+                if (typeof showAlert === 'function') {
+                    showAlert('An error occurred while unblocking the farmer.', 'error');
+                } else {
+                    alert('An error occurred while unblocking the farmer.');
+                }
             }
         }
 
         // Delete crop
         async function adminDeleteCrop(cropId) {
-            if (!window.confirm('Are you sure you want to delete this crop post?')) {
+            console.log('Delete crop called with ID:', cropId);
+            
+            if (!confirm('Are you sure you want to delete this crop post?')) {
                 return;
             }
             
@@ -327,20 +489,36 @@
                 
                 const response = await fetch('php/admin_delete_crop.php', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'same-origin'
                 });
                 
+                console.log('Delete crop response status:', response.status);
+                
                 const data = await response.json();
+                console.log('Delete crop response data:', data);
                 
                 if (data.success) {
-                    showAlert(data.message, 'success');
+                    if (typeof showAlert === 'function') {
+                        showAlert(data.message, 'success');
+                    } else {
+                        alert(data.message);
+                    }
                     loadCrops();
                 } else {
-                    showAlert(data.message, 'error');
+                    if (typeof showAlert === 'function') {
+                        showAlert(data.message, 'error');
+                    } else {
+                        alert(data.message);
+                    }
                 }
             } catch (error) {
-                showAlert('An error occurred.', 'error');
                 console.error('Delete crop error:', error);
+                if (typeof showAlert === 'function') {
+                    showAlert('An error occurred while deleting the crop.', 'error');
+                } else {
+                    alert('An error occurred while deleting the crop.');
+                }
             }
         }
 

@@ -14,8 +14,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $farmer_id = $_SESSION['farmer_id'];
     $crop_id = intval($_POST['crop_id']);
     
-    // Delete crop (ensure it belongs to the logged-in farmer)
-    $stmt = $conn->prepare("DELETE FROM crops WHERE crop_id = ? AND farmer_id = ?");
+    // Check if soft delete columns exist
+    $checkColumn = $conn->query("SHOW COLUMNS FROM crops LIKE 'is_deleted'");
+    $hasDeletedColumn = ($checkColumn && $checkColumn->num_rows > 0);
+    
+    if ($hasDeletedColumn) {
+        // Soft delete - mark as deleted instead of removing
+        $stmt = $conn->prepare("UPDATE crops SET is_deleted = 1, deleted_at = NOW() WHERE crop_id = ? AND farmer_id = ?");
+    } else {
+        // Hard delete if columns don't exist
+        $stmt = $conn->prepare("DELETE FROM crops WHERE crop_id = ? AND farmer_id = ?");
+    }
+    
     $stmt->bind_param("ii", $crop_id, $farmer_id);
     
     if ($stmt->execute() && $stmt->affected_rows > 0) {

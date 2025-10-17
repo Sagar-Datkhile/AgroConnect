@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Setup - AgroConnect</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html" class="logo">🌾 AgroConnect</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="card form-container" style="max-width: 700px;">
+            <h2 style="color: #0066CC; text-align: center; margin-bottom: 2rem;">Database Setup</h2>
+            
+            <div style="background: #EFF6FF; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+                <h3 style="color: #0066CC; margin-bottom: 1rem;">📋 Setup Instructions</h3>
+                <p style="margin-bottom: 1rem;">This page will add the necessary columns to your database for the soft delete feature (Recently Deleted Posts).</p>
+                <p style="margin-bottom: 0;"><strong>Note:</strong> The application works fine without this setup, but you won't have the "Recently Deleted Posts" feature in admin dashboard.</p>
+            </div>
+
+            <div id="result" style="display: none; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;"></div>
+
+            <button onclick="setupDatabase()" class="btn btn-primary" style="width: 100%;" id="setupBtn">
+                Run Database Setup
+            </button>
+
+            <div style="margin-top: 2rem; padding: 1rem; background: #FEF3C7; border-radius: 8px;">
+                <h4 style="color: #92400E; margin-bottom: 0.5rem;">⚠️ Alternative Method</h4>
+                <p style="color: #78350F; margin: 0;">If the button doesn't work, open phpMyAdmin and run these SQL commands:</p>
+                <pre style="background: white; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto;">ALTER TABLE crops ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
+ALTER TABLE crops ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL;</pre>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 AgroConnect - Empowering Farmers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/validation.js"></script>
+    <script>
+        async function setupDatabase() {
+            const btn = document.getElementById('setupBtn');
+            const result = document.getElementById('result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Setting up...';
+            result.style.display = 'none';
+            
+            try {
+                const response = await fetch('php/migrate_database.php');
+                const text = await response.text();
+                
+                result.style.display = 'block';
+                
+                if (text.includes('successfully') || text.includes('already exists')) {
+                    result.className = 'alert alert-success';
+                    result.innerHTML = '<strong>✓ Success!</strong><br>' + text.replace(/\n/g, '<br>');
+                    btn.textContent = 'Setup Complete!';
+                    btn.style.background = '#10B981';
+                } else {
+                    result.className = 'alert alert-error';
+                    result.innerHTML = '<strong>⚠ Error:</strong><br>' + text;
+                    btn.disabled = false;
+                    btn.textContent = 'Try Again';
+                }
+            } catch (error) {
+                result.style.display = 'block';
+                result.className = 'alert alert-error';
+                result.innerHTML = '<strong>⚠ Error:</strong><br>Failed to connect to database. Make sure XAMPP is running.';
+                btn.disabled = false;
+                btn.textContent = 'Try Again';
+                console.error('Setup error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
+

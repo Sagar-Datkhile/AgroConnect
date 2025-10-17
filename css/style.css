@@ -24,12 +24,15 @@ body {
 
 /* Header & Navigation */
 header {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     padding: 1rem 0;
     position: sticky;
     top: 0;
     z-index: 1000;
+    border-bottom: 1px solid rgba(0, 102, 204, 0.1);
 }
 
 nav {
@@ -64,6 +67,15 @@ nav {
 .nav-links a:hover,
 .nav-links a.active {
     color: #0066CC;
+}
+
+.nav-links a.logout-btn {
+    color: #DC2626;
+    font-weight: 600;
+}
+
+.nav-links a.logout-btn:hover {
+    color: #B91C1C;
 }
 
 /* Hero Section */
@@ -140,17 +152,58 @@ nav {
 }
 
 .btn-success {
-    background: #059669;
+    background: #10B981;
     color: white;
 }
 
 .btn-success:hover {
-    background: #047857;
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .btn-small {
     padding: 8px 16px;
     font-size: 0.9rem;
+}
+
+/* Hero Section Buttons - Special Styling */
+.btn-hero-primary {
+    background: #00A3E0;
+    color: white;
+    border: none;
+}
+
+.btn-hero-primary:hover {
+    background: #0088C0;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 163, 224, 0.4);
+}
+
+.btn-hero-success {
+    background: #4CAF50;
+    color: white;
+    border: none;
+}
+
+.btn-hero-success:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.btn-hero-accent {
+    background: #FFC107;
+    color: #333;
+    border: 2px solid #007BFF;
+    font-weight: 600;
+}
+
+.btn-hero-accent:hover {
+    background: #FFB300;
+    border-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.5);
 }
 
 /* Cards */
@@ -351,6 +404,102 @@ table .actions {
     border-left: 4px solid #0066CC;
 }
 
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 350px;
+}
+
+.toast {
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+    min-width: 300px;
+}
+
+.toast.removing {
+    animation: slideOut 0.3s ease-out forwards;
+}
+
+.toast-success {
+    background: #10B981;
+    color: white;
+}
+
+.toast-error {
+    background: #EF4444;
+    color: white;
+}
+
+.toast-info {
+    background: #0066CC;
+    color: white;
+}
+
+.toast-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.toast-message {
+    flex: 1;
+    font-size: 14px;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
 /* Search Section */
 .search-section {
     padding: 3rem 0;
@@ -405,6 +554,16 @@ table .actions {
 
 .crop-card .info-row strong {
     color: #666;
+}
+
+.time-badge {
+    background: #EFF6FF;
+    color: #0066CC;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 /* Modal */
@@ -549,6 +708,19 @@ footer p {
     table th,
     table td {
         padding: 8px;
+    }
+
+    /* Toast notifications on mobile */
+    .toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+
+    .toast {
+        min-width: auto;
+        width: 100%;
     }
 }
 

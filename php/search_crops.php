@@ -8,11 +8,19 @@ $region = isset($_GET['region']) ? trim($_GET['region']) : '';
 $min_area = isset($_GET['min_area']) ? floatval($_GET['min_area']) : 0;
 
 // Build dynamic query
-$query = "SELECT c.crop_id, c.crop_name, c.investment, c.turnover, c.description, 
+// Check if is_deleted column exists
+$checkColumn = $conn->query("SHOW COLUMNS FROM crops LIKE 'is_deleted'");
+$hasDeletedColumn = ($checkColumn && $checkColumn->num_rows > 0);
+
+$query = "SELECT c.crop_id, c.crop_name, c.investment, c.turnover, c.description, c.created_at,
           f.name as farmer_name, f.region, f.soil_type, f.area 
           FROM crops c 
           JOIN farmers f ON c.farmer_id = f.farmer_id 
           WHERE f.is_blocked = FALSE";
+
+if ($hasDeletedColumn) {
+    $query .= " AND (c.is_deleted = 0 OR c.is_deleted IS NULL)";
+}
 
 $params = [];
 $types = "";
