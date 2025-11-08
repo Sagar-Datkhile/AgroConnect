@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Admin - AgroConnect</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .info { background: #e3f2fd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #c8e6c9; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffcdd2; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>AgroConnect - Admin Debug Page</h1>
+    
+    <div class="info">
+        <h3>Current Path Information:</h3>
+        <p><strong>Full URL:</strong> <span id="fullUrl"></span></p>
+        <p><strong>Origin:</strong> <span id="origin"></span></p>
+        <p><strong>Pathname:</strong> <span id="pathname"></span></p>
+        <p><strong>Directory:</strong> <span id="directory"></span></p>
+        <p><strong>Computed PHP URL:</strong> <span id="phpUrl"></span></p>
+    </div>
+
+    <div>
+        <button onclick="testAdminGetFarmers()">Test Get Farmers</button>
+        <button onclick="testDirectAccess()">Test Direct Access</button>
+        <button onclick="testCheckSession()">Test Check Admin Session</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        // Display path info
+        document.getElementById('fullUrl').textContent = window.location.href;
+        document.getElementById('origin').textContent = window.location.origin;
+        document.getElementById('pathname').textContent = window.location.pathname;
+        
+        const path = window.location.pathname;
+        const directory = path.substring(0, path.lastIndexOf('/'));
+        document.getElementById('directory').textContent = directory;
+        
+        const phpUrl = window.location.origin + directory + '/php/admin_get_farmers.php';
+        document.getElementById('phpUrl').textContent = phpUrl;
+
+        function showResult(title, data, isError = false) {
+            const results = document.getElementById('results');
+            const className = isError ? 'error' : 'success';
+            results.innerHTML = `
+                <div class="${className}">
+                    <h3>${title}</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            ` + results.innerHTML;
+        }
+
+        async function testAdminGetFarmers() {
+            try {
+                const url = window.location.origin + directory + '/php/admin_get_farmers.php';
+                console.log('Fetching:', url);
+                
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                showResult('Get Farmers Test - SUCCESS', { url, status: response.status, data });
+            } catch (error) {
+                showResult('Get Farmers Test - ERROR', { 
+                    url: window.location.origin + directory + '/php/admin_get_farmers.php',
+                    error: error.message,
+                    stack: error.stack
+                }, true);
+            }
+        }
+
+        async function testDirectAccess() {
+            try {
+                const url = window.location.origin + '/AgroConnect/php/admin_get_farmers.php';
+                console.log('Fetching (hardcoded):', url);
+                
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                showResult('Direct Access Test - SUCCESS', { url, status: response.status, data });
+            } catch (error) {
+                showResult('Direct Access Test - ERROR', { 
+                    url: window.location.origin + '/AgroConnect/php/admin_get_farmers.php',
+                    error: error.message
+                }, true);
+            }
+        }
+
+        async function testCheckSession() {
+            try {
+                const url = window.location.origin + directory + '/php/check_admin_session.php';
+                console.log('Fetching:', url);
+                
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                showResult('Check Admin Session - SUCCESS', { url, status: response.status, data });
+            } catch (error) {
+                showResult('Check Admin Session - ERROR', { 
+                    url: window.location.origin + directory + '/php/check_admin_session.php',
+                    error: error.message
+                }, true);
+            }
+        }
+    </script>
+</body>
+</html>

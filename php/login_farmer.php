@@ -1,4 +1,8 @@
 <?php
+/**
+ * Farmer Login Handler
+ * Updated for new database schema with session tracking
+ */
 session_start();
 require_once 'db_connect.php';
 
@@ -14,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Fetch farmer details
-    $stmt = $conn->prepare("SELECT farmer_id, name, email, password, region, is_blocked FROM farmers WHERE email = ?");
+    $stmt = $conn->prepare("SELECT farmer_id, name, email, password, region, soil_type, area, is_blocked FROM farmers WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -34,11 +38,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Verify password
     if (password_verify($password, $farmer['password'])) {
+        // Generate session token
+        $session_token = bin2hex(random_bytes(32));
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? null;
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+        
+        // Insert session record
+        $session_stmt = $conn->prepare(
+            "INSERT INTO farmer_sessions (farmer_id, session_token, ip_address, user_agent) 
+             VALUES (?, ?, ?, ?)"
+        );
+        $session_stmt->bind_param("isss", $farmer['farmer_id'], $session_token, $ip_address, $user_agent);
+        $session_stmt->execute();
+        $session_stmt->close();
+        
         // Set session variables
         $_SESSION['farmer_id'] = $farmer['farmer_id'];
         $_SESSION['farmer_name'] = $farmer['name'];
         $_SESSION['farmer_email'] = $farmer['email'];
         $_SESSION['farmer_region'] = $farmer['region'];
+        $_SESSION['farmer_soil_type'] = $farmer['soil_type'];
+        $_SESSION['farmer_area'] = $farmer['area'];
+        $_SESSION['session_token'] = $session_token;
+        
+        // Log login activity
+        log_activity($conn, 'farmer', $farmer['farmer_id'], 'login', 'farmer', $farmer['farmer_id'], "Farmer logged in");
         
         echo json_encode(['success' => true, 'message' => 'Login successful!']);
     } else {

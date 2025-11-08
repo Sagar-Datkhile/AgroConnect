@@ -1,9 +1,22 @@
 // AgroConnect - Main JavaScript File
 
+// Helper function to get base directory
+function getBasePath() {
+    const path = window.location.pathname;
+    const directory = path.substring(0, path.lastIndexOf('/'));
+    return directory || '';
+}
+
+// Helper function to get PHP endpoint URL
+function getPhpUrl(endpoint) {
+    const basePath = getBasePath();
+    return `${basePath}/php/${endpoint}`;
+}
+
 // Check session status
 async function checkSession() {
     try {
-        const response = await fetch('php/check_session.php');
+        const response = await fetch(getPhpUrl('check_session.php'));
         const data = await response.json();
         return data;
     } catch (error) {
@@ -15,7 +28,7 @@ async function checkSession() {
 // Check admin session
 async function checkAdminSession() {
     try {
-        const response = await fetch('php/check_admin_session.php');
+        const response = await fetch(getPhpUrl('check_admin_session.php'));
         const data = await response.json();
         
         if (!data.logged_in) {
@@ -168,13 +181,17 @@ async function searchCrops(filters) {
         if (filters.region) params.append('region', filters.region);
         if (filters.min_area) params.append('min_area', filters.min_area);
         
-        const response = await fetch(`php/search_crops.php?${params.toString()}`);
-        const data = await response.json();
+        const response = await fetch(`${getPhpUrl('search_crops.php')}?${params.toString()}`);
         
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
         return data;
     } catch (error) {
         console.error('Search error:', error);
-        return { success: false, crops: [] };
+        return { success: false, crops: [], error: error.message };
     }
 }
 
@@ -227,7 +244,7 @@ function displaySearchResults(crops, containerId) {
 // Fetch farmer's crops
 async function fetchFarmerCrops() {
     try {
-        const response = await fetch('php/fetch_crops.php');
+        const response = await fetch(getPhpUrl('fetch_crops.php'));
         const data = await response.json();
         return data;
     } catch (error) {
@@ -248,7 +265,7 @@ async function deleteCrop(cropId) {
         const formData = new FormData();
         formData.append('crop_id', cropId);
         
-        const response = await fetch('php/delete_crop.php', {
+        const response = await fetch(getPhpUrl('delete_crop.php'), {
             method: 'POST',
             body: formData,
             credentials: 'same-origin'
@@ -317,7 +334,7 @@ async function logout(event) {
     
     if (window.confirm('Are you sure you want to logout?')) {
         try {
-            const response = await fetch('php/logout.php', {
+            const response = await fetch(getPhpUrl('logout.php'), {
                 method: 'GET',
                 credentials: 'same-origin'
             });

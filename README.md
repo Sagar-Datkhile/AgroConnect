@@ -45,9 +45,11 @@ The application features a modern, professional UI with a clean blue and white c
 
 - **Registration System**
   - Complete farmer profile creation
-  - Fields: Name, Email, Password, Region, Soil Type, Farm Area
+  - Fields: Name, Email, Password, Region, Soil Type (15 options), Farm Area
   - Email uniqueness validation
-  - Secure password hashing
+  - Secure password hashing (bcrypt)
+  - Real-time form validation
+  - **15 Soil Type Options**: Alluvial, Black, Red, Laterite, Desert, Mountain, Forest, Saline, Peaty, Yellow, Marshy, Skeletal, Calcareous, Alkaline, Mixed
 
 - **Authentication**
   - Secure login with PHP sessions
@@ -101,20 +103,30 @@ The application features a modern, professional UI with a clean blue and white c
   - Blocked farmers count
 
 - **Farmer Management**
-  - View all registered farmers
-  - Block farmers (prevents login)
-  - Unblock farmers
-  - View farmer details (email, region, soil type, area)
+  - View all registered farmers in organized table
+  - Search/filter farmers by name, email, or region
+  - Block farmers (prevents login and access)
+  - View farmer details (name, email, region, soil type, farm area, status)
+  - Real-time status updates (Active/Blocked badges)
 
 - **Crop Post Moderation**
-  - View all crop posts across platform
-  - Delete inappropriate content
-  - View associated farmer information
+  - View all crop posts across platform in sortable table
+  - Search/filter posts by crop name, farmer, or region
+  - Delete inappropriate content with confirmation
+  - View detailed farmer information for each post
+  - Right-aligned monetary values for better readability
 
 - **Blocked Users Management**
-  - Dedicated section for blocked farmers
-  - Quick unblock functionality
-  - Blocked user history
+  - Dedicated section displaying all blocked farmers
+  - Comprehensive blocked user information table
+  - One-click unblock functionality with confirmation
+  - Real-time updates when users are blocked/unblocked
+  - Empty state when no users are blocked
+
+- **Recently Deleted Posts**
+  - View posts deleted in last 30 days
+  - Track admin moderation actions
+  - Audit trail for content management
 
 ---
 
@@ -137,44 +149,46 @@ The application features a modern, professional UI with a clean blue and white c
 
 ### Database Name: `agroconnect`
 
-#### Table: `farmers`
-```sql
-CREATE TABLE farmers (
-  farmer_id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(100) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  region VARCHAR(100) NOT NULL,
-  soil_type VARCHAR(100) NOT NULL,
-  area FLOAT NOT NULL,
-  is_blocked BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+The database uses **UTF-8MB4** character encoding for proper support of all characters.
 
-#### Table: `crops`
-```sql
-CREATE TABLE crops (
-  crop_id INT AUTO_INCREMENT PRIMARY KEY,
-  farmer_id INT NOT NULL,
-  crop_name VARCHAR(100) NOT NULL,
-  investment DECIMAL(10,2) NOT NULL,
-  turnover DECIMAL(10,2) NOT NULL,
-  description TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (farmer_id) REFERENCES farmers(farmer_id) ON DELETE CASCADE
-);
-```
+#### Core Tables
 
-#### Table: `admins`
-```sql
-CREATE TABLE admins (
-  admin_id INT AUTO_INCREMENT PRIMARY KEY,
-  email VARCHAR(100) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+**1. `farmers`** - Stores farmer profiles and authentication
+- Primary Key: `farmer_id`
+- Includes: name, email, hashed password, region, soil type, farm area
+- Security: `is_blocked` flag for admin moderation
+- Timestamps: `registration_date`, `last_login`, `updated_at`
+
+**2. `crops`** - Manages crop posts by farmers
+- Primary Key: `crop_id`
+- Foreign Key: `farmer_id` (cascading delete)
+- Fields: crop_name, investment, turnover, description
+- Soft delete support: `is_deleted`, `deleted_at`, `deleted_by`
+- Auto-calculated: `profit` (generated column)
+
+**3. `admins`** - Admin user accounts
+- Primary Key: `admin_id`
+- Roles: super_admin, admin, moderator
+- Fields: name, email, hashed password, role, is_active
+
+**4. `farmer_blocks`** - Tracks blocking/unblocking history
+- Records admin actions with reasons
+- Supports block history and unblock tracking
+
+**5. `activity_logs`** - Comprehensive audit trail
+- Logs all user actions (farmer and admin)
+- Includes IP address and user agent
+- Enables security monitoring and analytics
+
+**6. `farmer_sessions` & `admin_sessions`** - Session management
+- Tracks active logins
+- Security monitoring with IP and user agent
+
+**7. `search_analytics`** - Search query tracking
+- Analyzes user search patterns
+- Helps improve crop discovery
+
+Full schema available in `database/agroconnect_schema.sql`
 
 ---
 
@@ -203,27 +217,36 @@ CREATE TABLE admins (
 
 #### 3. Create Database
 
-**Option A: Using MySQL Workbench**
+**Option A: Using MySQL Workbench (Recommended)**
 1. Open MySQL Workbench
-2. Connect to local instance (localhost:3306)
+2. Connect to local instance (localhost:3306, user: root, no password)
 3. Click **File** → **Open SQL Script**
-4. Navigate to the project folder and open `agroconnect.sql`
+4. Navigate to `AgroConnect/database/` folder and open `agroconnect_schema.sql`
 5. Click the **Execute** button (lightning icon)
+6. Verify all tables are created successfully
 
 **Option B: Using phpMyAdmin**
 1. Open browser and go to `http://localhost/phpmyadmin`
 2. Click **New** to create a database
-3. Name it `agroconnect` and click **Create**
-4. Click on the `agroconnect` database
-5. Go to **Import** tab
-6. Choose the `agroconnect.sql` file
-7. Click **Go**
+3. Name it `agroconnect` and select `utf8mb4_unicode_ci` collation
+4. Click **Create**
+5. Click on the `agroconnect` database
+6. Go to **Import** tab
+7. Choose `database/agroconnect_schema.sql` file
+8. Click **Go** and wait for completion
 
 **Option C: Using Command Line**
 ```bash
-mysql -u root -p < agroconnect.sql
+mysql -u root -p < database/agroconnect_schema.sql
 ```
 (Press Enter when prompted for password if you haven't set one)
+
+**Note**: The schema file includes:
+- All 8 database tables with proper relationships
+- Indexes for performance optimization
+- Database triggers for automatic updates
+- UTF-8MB4 character set for full Unicode support
+- Sample admin account (admin@agroconnect.com / Admin@123)
 
 #### 4. Deploy Project Files
 
@@ -326,26 +349,32 @@ agroconnect/
 │   ├── script.js              # Main JavaScript (search, UI logic)
 │   └── validation.js          # Form validation functions
 │
+├── database/
+│   └── agroconnect_schema.sql # Complete database schema with all tables
+│
 └── php/
-    ├── db_connect.php         # MySQL connection
-    ├── register_farmer.php    # Farmer registration handler
-    ├── login_farmer.php       # Farmer login handler
-    ├── logout.php             # Session destroy & logout
-    ├── add_crop.php           # Add new crop post
-    ├── edit_crop.php          # Edit existing crop
-    ├── delete_crop.php        # Delete crop
-    ├── fetch_crops.php        # Get farmer's crops
-    ├── get_farmer_profile.php # Get profile data
-    ├── update_profile.php     # Update farmer profile
-    ├── search_crops.php       # Public crop search
-    ├── check_session.php      # Verify farmer session
-    ├── admin_login.php        # Admin authentication
-    ├── admin_get_farmers.php  # Get all farmers
-    ├── admin_get_crops.php    # Get all crops
-    ├── admin_delete_crop.php  # Admin delete crop
-    ├── admin_block_farmer.php # Block farmer
-    ├── admin_unblock_farmer.php # Unblock farmer
-    └── check_admin_session.php # Verify admin session
+    ├── db_connect.php              # MySQL connection with UTF-8MB4 support
+    ├── register_farmer.php         # Farmer registration handler
+    ├── login_farmer.php            # Farmer login handler
+    ├── logout.php                  # Session destroy & logout
+    ├── add_crop.php                # Add new crop post
+    ├── edit_crop.php               # Edit existing crop
+    ├── delete_crop.php             # Delete crop (soft delete)
+    ├── fetch_crops.php             # Get farmer's crops
+    ├── get_farmer_profile.php      # Get profile data
+    ├── update_profile.php          # Update farmer profile
+    ├── search_crops.php            # Public crop search with filters
+    ├── check_session.php           # Verify farmer session
+    ├── admin_login.php             # Admin authentication
+    ├── admin_get_farmers.php       # Get all farmers (with block status)
+    ├── admin_get_crops.php         # Get all crops across platform
+    ├── admin_get_deleted_crops.php # Get recently deleted posts
+    ├── admin_delete_crop.php       # Admin delete crop with logging
+    ├── admin_block_farmer.php      # Block farmer with reason tracking
+    ├── admin_unblock_farmer.php    # Unblock farmer with logging
+    ├── check_admin_session.php     # Verify admin session
+    ├── migrate_database.php        # Database migration utility
+    └── verify_database.php         # Database verification script
 ```
 
 ---
@@ -381,20 +410,21 @@ agroconnect/
 
 ### Admin Access
 ```
-Email: admin@example.com
-Password: password123
+Email: admin@agroconnect.com
+Password: Admin@123
 ```
 
-### Sample Farmer Accounts (from SQL file)
-```
-Farmer 1:
-Email: john@example.com
-Password: farmer123
+### Test Farmer Accounts
+Create your own farmer accounts through the registration page.
+All passwords are securely hashed using bcrypt.
 
-Farmer 2:
-Email: jane@example.com
-Password: farmer123
-```
+**To create a test farmer:**
+1. Go to Farmer Registration page
+2. Fill in the form with test data
+3. Use any email (e.g., test@example.com)
+4. Set a password (minimum 6 characters)
+5. Select region, soil type, and farm area
+6. Submit to create account
 
 **⚠️ Security Note**: These are development credentials. In production:
 - Use strong, unique passwords
@@ -562,13 +592,15 @@ http://localhost/agroconnect/php/db_connect.php
 
 ## 📊 Project Statistics
 
-- **Total Files**: 25+
-- **Lines of Code**: ~3000+
-- **Database Tables**: 3
-- **PHP Scripts**: 18
+- **Total Files**: 30+
+- **Lines of Code**: ~5000+
+- **Database Tables**: 8 (farmers, crops, admins, farmer_blocks, activity_logs, farmer_sessions, admin_sessions, search_analytics)
+- **PHP Scripts**: 24
 - **HTML Pages**: 7
-- **JavaScript Functions**: 30+
-- **CSS Classes**: 100+
+- **JavaScript Functions**: 50+
+- **CSS Classes**: 150+
+- **Soil Types Supported**: 15
+- **Admin Features**: 5 (Dashboard, Manage Farmers, Manage Crops, Blocked Users, Deleted Posts)
 
 ---
 

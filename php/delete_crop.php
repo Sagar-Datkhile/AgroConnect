@@ -1,4 +1,8 @@
 <?php
+/**
+ * Delete Crop Handler
+ * Updated for new database schema with soft delete
+ */
 session_start();
 require_once 'db_connect.php';
 
@@ -14,21 +18,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $farmer_id = $_SESSION['farmer_id'];
     $crop_id = intval($_POST['crop_id']);
     
-    // Check if soft delete columns exist
-    $checkColumn = $conn->query("SHOW COLUMNS FROM crops LIKE 'is_deleted'");
-    $hasDeletedColumn = ($checkColumn && $checkColumn->num_rows > 0);
-    
-    if ($hasDeletedColumn) {
-        // Soft delete - mark as deleted instead of removing
-        $stmt = $conn->prepare("UPDATE crops SET is_deleted = 1, deleted_at = NOW() WHERE crop_id = ? AND farmer_id = ?");
-    } else {
-        // Hard delete if columns don't exist
-        $stmt = $conn->prepare("DELETE FROM crops WHERE crop_id = ? AND farmer_id = ?");
+    // Get crop name for logging
+    $crop_query = $conn->prepare("SELECT crop_name FROM crops WHERE crop_id = ? AND farmer_id = ?");
+    $crop_query->bind_param("ii", $crop_id, $farmer_id);
+    $crop_query->execute();
+    $crop_result = $crop_query->get_result();
+    $crop_name = "";
+    if ($crop_result->num_rows > 0) {
+        $crop_data = $crop_result->fetch_assoc();
+        $crop_name = $crop_data['crop_name'];
     }
+    $crop_query->close();
     
+    // Soft delete - mark as deleted (trigger will set deleted_at)
+    $stmt = $conn->prepare("UPDATE crops SET is_deleted = TRUE WHERE crop_id = ? AND farmer_id = ?");
     $stmt->bind_param("ii", $crop_id, $farmer_id);
     
     if ($stmt->execute() && $stmt->affected_rows > 0) {
+        // Log activity
+        log_activity($conn, 'farmer', $farmer_id, 'delete_crop', 'crop', $crop_id, "Deleted crop: $crop_name");
+        
         echo json_encode(['success' => true, 'message' => 'Crop deleted successfully!']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to delete crop.']);

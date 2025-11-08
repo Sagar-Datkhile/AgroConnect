@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - AgroConnect</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=1.6">
 </head>
 <body>
     <header>
@@ -95,7 +95,7 @@
 
     <footer>
         <div class="container">
-            <p>&copy; 2024 AgroConnect - Empowering Farmers. All rights reserved.</p>
+            <p>&copy; 2025 AgroConnect - Empowering Farmers. All rights reserved.</p>
         </div>
     </footer>
 
@@ -108,6 +108,14 @@
         let filteredFarmers = [];
         let filteredCrops = [];
 
+        // Get base URL for API calls
+        function getBaseUrl() {
+            // Get the directory of current page
+            const path = window.location.pathname;
+            const directory = path.substring(0, path.lastIndexOf('/'));
+            return window.location.origin + directory;
+        }
+
         // Initialize admin dashboard
         async function initAdminDashboard() {
             await checkAdminSession();
@@ -119,17 +127,30 @@
         // Load all farmers
         async function loadFarmers() {
             try {
-                const response = await fetch('php/admin_get_farmers.php');
+                const baseUrl = getBaseUrl();
+                const response = await fetch(`${baseUrl}/php/admin_get_farmers.php`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Farmers data received:', data);
                 
                 if (data.success) {
-                    allFarmers = data.farmers;
-                    displayFarmers(data.farmers);
-                    displayBlockedFarmers(data.farmers.filter(f => f.is_blocked == 1 || f.is_blocked === '1'));
+                    allFarmers = data.farmers || [];
+                    displayFarmers(allFarmers);
+                    displayBlockedFarmers(allFarmers.filter(f => f.is_blocked == 1 || f.is_blocked === '1'));
                     updateDashboardStats();
+                } else {
+                    console.error('Failed to load farmers:', data.message);
+                    document.getElementById('farmers-container').innerHTML = 
+                        `<div class="alert alert-error">${data.message || 'Failed to load farmers'}</div>`;
                 }
             } catch (error) {
                 console.error('Load farmers error:', error);
+                document.getElementById('farmers-container').innerHTML = 
+                    `<div class="alert alert-error">Error loading farmers: ${error.message}</div>`;
             }
         }
 
@@ -137,7 +158,9 @@
         function displayFarmers(farmers) {
             const container = document.getElementById('farmers-container');
             
-            if (farmers.length === 0) {
+            console.log('Displaying active farmers:', farmers);
+            
+            if (!farmers || farmers.length === 0) {
                 container.innerHTML = '<p class="text-center">No farmers registered yet.</p>';
                 return;
             }
@@ -160,7 +183,7 @@
                             <th>Soil Type</th>
                             <th>Area</th>
                             <th>Status</th>
-                            <th>Actions</th>
+                            <th style="width: 120px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -208,7 +231,9 @@
         function displayBlockedFarmers(farmers) {
             const container = document.getElementById('blocked-container');
             
-            if (farmers.length === 0) {
+            console.log('Displaying blocked farmers:', farmers);
+            
+            if (!farmers || farmers.length === 0) {
                 container.innerHTML = '<p class="text-center">No blocked farmers.</p>';
                 return;
             }
@@ -220,7 +245,9 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Region</th>
-                            <th>Blocked On</th>
+                            <th>Soil Type</th>
+                            <th>Area</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -230,7 +257,9 @@
                                 <td>${farmer.name}</td>
                                 <td>${farmer.email}</td>
                                 <td>${farmer.region}</td>
-                                <td>${formatDate(farmer.created_at)}</td>
+                                <td>${farmer.soil_type}</td>
+                                <td>${farmer.area} acres</td>
+                                <td><span class="badge badge-danger">Blocked</span></td>
                                 <td class="actions">
                                     <button class="btn btn-small btn-success" onclick="unblockFarmer(${farmer.farmer_id})">Unblock</button>
                                 </td>
@@ -244,7 +273,8 @@
         // Load all crops
         async function loadCrops() {
             try {
-                const response = await fetch('php/admin_get_crops.php');
+                const baseUrl = getBaseUrl();
+                const response = await fetch(`${baseUrl}/php/admin_get_crops.php`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -261,7 +291,7 @@
         function displayCrops(crops) {
             const container = document.getElementById('crops-container');
             
-            if (crops.length === 0) {
+            if (!crops || crops.length === 0) {
                 container.innerHTML = '<p class="text-center">No crop posts yet.</p>';
                 return;
             }
@@ -275,10 +305,10 @@
                             <th>Crop Name</th>
                             <th>Farmer</th>
                             <th>Region</th>
-                            <th>Investment</th>
-                            <th>Turnover</th>
+                            <th style="text-align: right;">Investment</th>
+                            <th style="text-align: right;">Turnover</th>
                             <th>Posted On</th>
-                            <th>Actions</th>
+                            <th style="width: 120px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -287,8 +317,8 @@
                                 <td>${crop.crop_name}</td>
                                 <td>${crop.farmer_name}<br><small style="color: #666;">${crop.farmer_email}</small></td>
                                 <td>${crop.region}</td>
-                                <td>${formatCurrency(crop.investment)}</td>
-                                <td>${formatCurrency(crop.turnover)}</td>
+                                <td style="text-align: right;">${formatCurrency(crop.investment)}</td>
+                                <td style="text-align: right;">${formatCurrency(crop.turnover)}</td>
                                 <td>${formatDate(crop.created_at)}</td>
                                 <td class="actions">
                                     <button class="btn btn-small btn-danger" onclick="adminDeleteCrop(${crop.crop_id})">Delete</button>
@@ -325,7 +355,8 @@
         // Load deleted crops
         async function loadDeletedCrops() {
             try {
-                const response = await fetch('php/admin_get_deleted_crops.php');
+                const baseUrl = getBaseUrl();
+                const response = await fetch(`${baseUrl}/php/admin_get_deleted_crops.php`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -393,7 +424,8 @@
                 const formData = new FormData();
                 formData.append('farmer_id', farmerId);
                 
-                const response = await fetch('php/admin_block_farmer.php', {
+                const baseUrl = getBaseUrl();
+                const response = await fetch(`${baseUrl}/php/admin_block_farmer.php`, {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin'
@@ -440,7 +472,8 @@
                 const formData = new FormData();
                 formData.append('farmer_id', farmerId);
                 
-                const response = await fetch('php/admin_unblock_farmer.php', {
+                const baseUrl = getBaseUrl();
+                const response = await fetch(`${baseUrl}/php/admin_unblock_farmer.php`, {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin'
@@ -487,7 +520,8 @@
                 const formData = new FormData();
                 formData.append('crop_id', cropId);
                 
-                const response = await fetch('php/admin_delete_crop.php', {
+                const baseUrl = getBaseUrl();
+                const response = await fetch(`${baseUrl}/php/admin_delete_crop.php`, {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin'

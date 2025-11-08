@@ -31,10 +31,6 @@ CREATE TABLE IF NOT EXISTS crops (
   FOREIGN KEY (farmer_id) REFERENCES farmers(farmer_id) ON DELETE CASCADE
 );
 
--- Add columns to existing crops table if not exists
-ALTER TABLE crops ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
-ALTER TABLE crops ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL;
-
 -- Admins Table
 CREATE TABLE IF NOT EXISTS admins (
   admin_id INT AUTO_INCREMENT PRIMARY KEY,

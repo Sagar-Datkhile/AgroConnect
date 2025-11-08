@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Search Test</title>
+</head>
+<body>
+    <h1>Direct Search Test</h1>
+    <button onclick="testSearch()">Test Search</button>
+    <div id="result"></div>
+
+    <script>
+        async function testSearch() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                console.log('Attempting to fetch from: /AgroConnect/php/search_crops.php');
+                
+                const response = await fetch('/AgroConnect/php/search_crops.php', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                console.log('Response headers:', response.headers);
+                
+                const text = await response.text();
+                console.log('Response text:', text);
+                
+                resultDiv.innerHTML = `
+                    <h2>Success!</h2>
+                    <p>Status: ${response.status}</p>
+                    <p>Response:</p>
+                    <pre>${text}</pre>
+                `;
+                
+            } catch (error) {
+                console.error('Error details:', error);
+                resultDiv.innerHTML = `
+                    <h2 style="color: red;">Error!</h2>
+                    <p>Error: ${error.message}</p>
+                    <p>Check browser console for details (F12)</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

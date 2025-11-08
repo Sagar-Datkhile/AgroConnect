@@ -53,7 +53,7 @@
 
     <footer>
         <div class="container">
-            <p>&copy; 2024 AgroConnect - Empowering Farmers. All rights reserved.</p>
+            <p>&copy; 2025 AgroConnect - Empowering Farmers. All rights reserved.</p>
         </div>
     </footer>
 
@@ -71,12 +71,23 @@
             const resultsContainer = document.getElementById('search-results');
             resultsContainer.innerHTML = '<div class="loading">Searching...</div>';
 
-            const data = await searchCrops(filters);
+            try {
+                console.log('Searching with filters:', filters);
+                const data = await searchCrops(filters);
+                console.log('Search response:', data);
 
-            if (data.success) {
-                displaySearchResults(data.crops, 'search-results');
-            } else {
-                resultsContainer.innerHTML = '<div class="text-center"><p>An error occurred while searching.</p></div>';
+                if (data.success) {
+                    if (data.crops && data.crops.length > 0) {
+                        displaySearchResults(data.crops, 'search-results');
+                    } else {
+                        resultsContainer.innerHTML = '<div class="text-center"><p>No crops found matching your criteria.</p></div>';
+                    }
+                } else {
+                    resultsContainer.innerHTML = `<div class="text-center"><p style="color: red;">Error: ${data.error || data.message || 'An error occurred while searching.'}</p></div>`;
+                }
+            } catch (error) {
+                console.error('Search failed:', error);
+                resultsContainer.innerHTML = `<div class="text-center"><p style="color: red;">Failed to search: ${error.message}</p><p>Please check if Apache and MySQL are running in XAMPP.</p></div>`;
             }
         }
 

@@ -1,4 +1,8 @@
 <?php
+/**
+ * Update Farmer Profile Handler
+ * Updated for new database schema
+ */
 session_start();
 require_once 'db_connect.php';
 
@@ -13,6 +17,7 @@ if (!isset($_SESSION['farmer_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $farmer_id = $_SESSION['farmer_id'];
     $name = trim($_POST['name']);
+    $phone = isset($_POST['phone']) ? trim($_POST['phone']) : null;
     $region = trim($_POST['region']);
     $soil_type = trim($_POST['soil_type']);
     $area = floatval($_POST['area']);
@@ -24,13 +29,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Update profile
-    $stmt = $conn->prepare("UPDATE farmers SET name = ?, region = ?, soil_type = ?, area = ? WHERE farmer_id = ?");
-    $stmt->bind_param("sssdi", $name, $region, $soil_type, $area, $farmer_id);
+    $stmt = $conn->prepare("UPDATE farmers SET name = ?, phone = ?, region = ?, soil_type = ?, area = ? WHERE farmer_id = ?");
+    $stmt->bind_param("ssssdi", $name, $phone, $region, $soil_type, $area, $farmer_id);
     
     if ($stmt->execute()) {
         // Update session variables
         $_SESSION['farmer_name'] = $name;
         $_SESSION['farmer_region'] = $region;
+        $_SESSION['farmer_soil_type'] = $soil_type;
+        $_SESSION['farmer_area'] = $area;
+        
+        // Log activity
+        log_activity($conn, 'farmer', $farmer_id, 'update_profile', 'farmer', $farmer_id, "Updated profile");
         
         echo json_encode(['success' => true, 'message' => 'Profile updated successfully!']);
     } else {

@@ -1,4 +1,8 @@
 <?php
+/**
+ * Admin Delete Crop
+ * Updated for new database schema with soft delete and tracking
+ */
 session_start();
 require_once 'db_connect.php';
 
@@ -12,22 +16,30 @@ if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $crop_id = intval($_POST['crop_id']);
+    $admin_id = $_SESSION['admin_id'];
     
-    // Check if soft delete columns exist
-    $checkColumn = $conn->query("SHOW COLUMNS FROM crops LIKE 'is_deleted'");
-    $hasDeletedColumn = ($checkColumn && $checkColumn->num_rows > 0);
-    
-    if ($hasDeletedColumn) {
-        // Soft delete - mark as deleted instead of removing
-        $stmt = $conn->prepare("UPDATE crops SET is_deleted = 1, deleted_at = NOW() WHERE crop_id = ?");
-    } else {
-        // Hard delete if columns don't exist
-        $stmt = $conn->prepare("DELETE FROM crops WHERE crop_id = ?");
+    // Get crop name for logging
+    $crop_query = $conn->prepare("SELECT crop_name, farmer_id FROM crops WHERE crop_id = ?");
+    $crop_query->bind_param("i", $crop_id);
+    $crop_query->execute();
+    $crop_result = $crop_query->get_result();
+    $crop_name = "";
+    $farmer_id = null;
+    if ($crop_result->num_rows > 0) {
+        $crop_data = $crop_result->fetch_assoc();
+        $crop_name = $crop_data['crop_name'];
+        $farmer_id = $crop_data['farmer_id'];
     }
+    $crop_query->close();
     
-    $stmt->bind_param("i", $crop_id);
+    // Soft delete and record who deleted (trigger will set deleted_at)
+    $stmt = $conn->prepare("UPDATE crops SET is_deleted = TRUE, deleted_by = ? WHERE crop_id = ?");
+    $stmt->bind_param("ii", $admin_id, $crop_id);
     
-    if ($stmt->execute()) {
+    if ($stmt->execute() && $stmt->affected_rows > 0) {
+        // Log activity
+        log_activity($conn, 'admin', $admin_id, 'delete_crop', 'crop', $crop_id, "Admin deleted crop: $crop_name (Farmer ID: $farmer_id)");
+        
         echo json_encode(['success' => true, 'message' => 'Crop deleted successfully!']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to delete crop.']);
