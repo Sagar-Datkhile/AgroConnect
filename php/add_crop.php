@@ -1,14 +1,9 @@
 <?php
-/**
- * Add Crop Handler
- * Updated for new database schema with extended fields
- */
 session_start();
 require_once 'db_connect.php';
 
 header('Content-Type: application/json');
 
-// Check if farmer is logged in
 if (!isset($_SESSION['farmer_id'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
     exit;
@@ -27,13 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $quantity = isset($_POST['quantity']) ? floatval($_POST['quantity']) : null;
     $quantity_unit = isset($_POST['quantity_unit']) ? trim($_POST['quantity_unit']) : null;
     
-    // Validation
     if (empty($crop_name) || $investment < 0 || $turnover < 0) {
         echo json_encode(['success' => false, 'message' => 'Invalid crop details.']);
         exit;
     }
     
-    // Insert crop with extended fields
     $stmt = $conn->prepare(
         "INSERT INTO crops (farmer_id, crop_name, category, investment, turnover, description, season, planting_date, harvest_date, quantity, quantity_unit) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -47,7 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($stmt->execute()) {
         $crop_id = $conn->insert_id;
         
-        // Log activity
         log_activity($conn, 'farmer', $farmer_id, 'add_crop', 'crop', $crop_id, "Added crop: $crop_name");
         
         echo json_encode([

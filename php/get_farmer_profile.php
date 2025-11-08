@@ -1,14 +1,9 @@
 <?php
-/**
- * Get Farmer Profile
- * Updated for new database schema with extended fields
- */
 session_start();
 require_once 'db_connect.php';
 
 header('Content-Type: application/json');
 
-// Check if farmer is logged in
 if (!isset($_SESSION['farmer_id'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
     exit;
@@ -16,7 +11,6 @@ if (!isset($_SESSION['farmer_id'])) {
 
 $farmer_id = $_SESSION['farmer_id'];
 
-// Fetch farmer profile with extended fields
 $stmt = $conn->prepare(
     "SELECT name, email, phone, region, soil_type, area, registration_date, last_login 
      FROM farmers WHERE farmer_id = ?"
@@ -28,7 +22,6 @@ $result = $stmt->get_result();
 if ($result->num_rows > 0) {
     $profile = $result->fetch_assoc();
     
-    // Get crop statistics using stored procedure
     $stats_query = $conn->query("CALL sp_get_farmer_dashboard($farmer_id)");
     $stats = $stats_query->fetch_assoc();
     $stats_query->close();

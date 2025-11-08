@@ -1,19 +1,14 @@
-// AgroConnect - Main JavaScript File
-
-// Helper function to get base directory
 function getBasePath() {
     const path = window.location.pathname;
     const directory = path.substring(0, path.lastIndexOf('/'));
     return directory || '';
 }
 
-// Helper function to get PHP endpoint URL
 function getPhpUrl(endpoint) {
     const basePath = getBasePath();
     return `${basePath}/php/${endpoint}`;
 }
 
-// Check session status
 async function checkSession() {
     try {
         const response = await fetch(getPhpUrl('check_session.php'));
@@ -25,7 +20,6 @@ async function checkSession() {
     }
 }
 
-// Check admin session
 async function checkAdminSession() {
     try {
         const response = await fetch(getPhpUrl('check_admin_session.php'));
@@ -42,7 +36,6 @@ async function checkAdminSession() {
     }
 }
 
-// Protect farmer dashboard pages
 async function protectFarmerPage() {
     const session = await checkSession();
     
@@ -54,7 +47,6 @@ async function protectFarmerPage() {
     return session;
 }
 
-// Modal Functions
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -69,14 +61,12 @@ function closeModal(modalId) {
     }
 }
 
-// Close modal when clicking outside
 document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
         e.target.classList.remove('active');
     }
 });
 
-// Format currency
 function formatCurrency(amount) {
     return new Intl.NumberFormat('en-IN', {
         style: 'currency',
@@ -84,7 +74,6 @@ function formatCurrency(amount) {
     }).format(amount);
 }
 
-// Format date
 function formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-IN', {
@@ -94,7 +83,6 @@ function formatDate(dateString) {
     });
 }
 
-// Format time ago (e.g., "2d ago", "3mo ago", "1y ago")
 function timeAgo(dateString) {
     const now = new Date();
     const date = new Date(dateString);
@@ -142,16 +130,12 @@ function timeAgo(dateString) {
     return `${years}y ago`;
 }
 
-// Note: Using window.confirm() directly for dialogs
-
-// Show loading state
 function showLoading(element) {
     if (element) {
         element.innerHTML = '<div class="loading">Loading...</div>';
     }
 }
 
-// Hide loading state
 function hideLoading(element) {
     const loading = element?.querySelector('.loading');
     if (loading) {
@@ -159,7 +143,6 @@ function hideLoading(element) {
     }
 }
 
-// Debounce function for search
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -172,7 +155,6 @@ function debounce(func, wait) {
     };
 }
 
-// Search crops
 async function searchCrops(filters) {
     try {
         const params = new URLSearchParams();
@@ -195,7 +177,6 @@ async function searchCrops(filters) {
     }
 }
 
-// Display search results
 function displaySearchResults(crops, containerId) {
     const container = document.getElementById(containerId);
     
@@ -241,7 +222,6 @@ function displaySearchResults(crops, containerId) {
     `).join('');
 }
 
-// Fetch farmer's crops
 async function fetchFarmerCrops() {
     try {
         const response = await fetch(getPhpUrl('fetch_crops.php'));
@@ -253,7 +233,6 @@ async function fetchFarmerCrops() {
     }
 }
 
-// Delete crop
 async function deleteCrop(cropId) {
     console.log('Delete crop called with ID:', cropId);
     
@@ -277,18 +256,15 @@ async function deleteCrop(cropId) {
         console.log('Delete response data:', data);
         
         if (data.success) {
-            // Check if showAlert is available
             if (typeof showAlert === 'function') {
                 showAlert(data.message, 'success');
             } else {
                 alert(data.message);
             }
             
-            // Reload crops
             if (typeof loadMyCrops === 'function') {
                 loadMyCrops();
             } else {
-                // Fallback: reload the page
                 window.location.reload();
             }
         } else {
@@ -308,7 +284,6 @@ async function deleteCrop(cropId) {
     }
 }
 
-// Set active navigation link
 function setActiveNav() {
     const currentPage = window.location.pathname.split('/').pop();
     const navLinks = document.querySelectorAll('.nav-links a, .sidebar a');
@@ -321,12 +296,10 @@ function setActiveNav() {
     });
 }
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     setActiveNav();
 });
 
-// Logout function
 async function logout(event) {
     if (event) {
         event.preventDefault();
@@ -341,9 +314,7 @@ async function logout(event) {
             const data = await response.json();
             
             if (data.success) {
-                // Clear any local storage/session storage if used
                 sessionStorage.clear();
-                // Redirect to home page after logout
                 window.location.href = 'index.html';
             } else {
                 console.error('Logout failed:', data);
@@ -351,7 +322,6 @@ async function logout(event) {
             }
         } catch (error) {
             console.error('Logout error:', error);
-            // Redirect anyway
             window.location.href = 'index.html';
         }
     }

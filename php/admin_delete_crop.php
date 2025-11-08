@@ -1,14 +1,9 @@
 <?php
-/**
- * Admin Delete Crop
- * Updated for new database schema with soft delete and tracking
- */
 session_start();
 require_once 'db_connect.php';
 
 header('Content-Type: application/json');
 
-// Check if admin is logged in
 if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
     exit;
@@ -18,7 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $crop_id = intval($_POST['crop_id']);
     $admin_id = $_SESSION['admin_id'];
     
-    // Get crop name for logging
     $crop_query = $conn->prepare("SELECT crop_name, farmer_id FROM crops WHERE crop_id = ?");
     $crop_query->bind_param("i", $crop_id);
     $crop_query->execute();
@@ -32,12 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $crop_query->close();
     
-    // Soft delete and record who deleted (trigger will set deleted_at)
     $stmt = $conn->prepare("UPDATE crops SET is_deleted = TRUE, deleted_by = ? WHERE crop_id = ?");
     $stmt->bind_param("ii", $admin_id, $crop_id);
     
     if ($stmt->execute() && $stmt->affected_rows > 0) {
-        // Log activity
         log_activity($conn, 'admin', $admin_id, 'delete_crop', 'crop', $crop_id, "Admin deleted crop: $crop_name (Farmer ID: $farmer_id)");
         
         echo json_encode(['success' => true, 'message' => 'Crop deleted successfully!']);

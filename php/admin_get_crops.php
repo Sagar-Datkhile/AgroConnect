@@ -1,21 +1,15 @@
 <?php
-/**
- * Admin Get All Crops
- * Updated for new database schema
- */
 session_start();
 require_once 'db_connect.php';
 
 header('Content-Type: application/json');
 
-// Check if admin is logged in
 if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
     exit;
 }
 
-// Fetch all active crops with farmer details and extended fields
-$query = "SELECT c.crop_id, c.crop_name, c.category, c.investment, c.turnover, c.profit, 
+$query = "SELECT c.crop_id, c.crop_name, c.category, c.investment, c.turnover, c.profit,
                  c.description, c.season, c.created_at,
                  f.farmer_id, f.name as farmer_name, f.email as farmer_email, f.region 
           FROM crops c 

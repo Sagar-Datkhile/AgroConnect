@@ -1,10 +1,4 @@
 <?php
-/**
- * Public Crop Search Handler
- * Backward compatible with old and new database schema
- */
-
-// Enable error reporting for debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 0); // Don't display errors in output
 ini_set('log_errors', 1);
@@ -19,7 +13,6 @@ try {
     $min_area = isset($_GET['min_area']) ? floatval($_GET['min_area']) : 0;
     $category = isset($_GET['category']) ? trim($_GET['category']) : '';
     
-    // Check which columns exist in crops table
     $checkColumns = $conn->query("SHOW COLUMNS FROM crops");
     $columns = [];
     while ($col = $checkColumns->fetch_assoc()) {
@@ -29,23 +22,19 @@ try {
     $hasNewSchema = in_array('category', $columns) && in_array('profit', $columns);
     $hasIsDeleted = in_array('is_deleted', $columns);
     
-    // Build query based on available columns
     if ($hasNewSchema) {
-        // New schema with extended fields
         $query = "SELECT c.crop_id, c.crop_name, c.category, c.investment, c.turnover, c.profit, 
                          c.description, c.season, c.quantity, c.quantity_unit, c.created_at,
                          f.name as farmer_name, f.email as farmer_email, f.region, f.soil_type, f.area 
                   FROM crops c 
                   INNER JOIN farmers f ON c.farmer_id = f.farmer_id";
     } else {
-        // Old schema - basic fields
         $query = "SELECT c.crop_id, c.crop_name, c.investment, c.turnover, c.description, c.created_at,
                          f.name as farmer_name, f.region, f.soil_type, f.area 
                   FROM crops c 
                   INNER JOIN farmers f ON c.farmer_id = f.farmer_id";
     }
     
-    // Add WHERE conditions
     $whereConditions = [];
     
     if ($hasIsDeleted) {
@@ -99,7 +88,6 @@ try {
         $crops[] = $row;
     }
     
-    // Log search analytics if table exists (new schema only)
     $checkAnalytics = $conn->query("SHOW TABLES LIKE 'search_analytics'");
     if ($checkAnalytics && $checkAnalytics->num_rows > 0) {
         $ip_address = $_SERVER['REMOTE_ADDR'] ?? null;

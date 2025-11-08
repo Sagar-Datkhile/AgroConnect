@@ -1,14 +1,9 @@
 <?php
-/**
- * Fetch Farmer's Crops
- * Updated for new database schema
- */
 session_start();
 require_once 'db_connect.php';
 
 header('Content-Type: application/json');
 
-// Check if farmer is logged in
 if (!isset($_SESSION['farmer_id'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
     exit;
@@ -16,7 +11,6 @@ if (!isset($_SESSION['farmer_id'])) {
 
 $farmer_id = $_SESSION['farmer_id'];
 
-// Fetch all active crops for this farmer with profit calculation
 $stmt = $conn->prepare(
     "SELECT crop_id, crop_name, category, investment, turnover, profit, description, season, 
             planting_date, harvest_date, quantity, quantity_unit, created_at, updated_at

@@ -1,8 +1,4 @@
 <?php
-/**
- * Farmer Login Handler
- * Updated for new database schema with session tracking
- */
 session_start();
 require_once 'db_connect.php';
 
@@ -17,7 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
-    // Fetch farmer details
     $stmt = $conn->prepare("SELECT farmer_id, name, email, password, region, soil_type, area, is_blocked FROM farmers WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
@@ -30,20 +25,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $farmer = $result->fetch_assoc();
     
-    // Check if farmer is blocked
     if ($farmer['is_blocked']) {
         echo json_encode(['success' => false, 'message' => 'Your account has been blocked. Contact admin.']);
         exit;
     }
     
-    // Verify password
     if (password_verify($password, $farmer['password'])) {
-        // Generate session token
         $session_token = bin2hex(random_bytes(32));
         $ip_address = $_SERVER['REMOTE_ADDR'] ?? null;
         $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
-        
-        // Insert session record
         $session_stmt = $conn->prepare(
             "INSERT INTO farmer_sessions (farmer_id, session_token, ip_address, user_agent) 
              VALUES (?, ?, ?, ?)"
@@ -52,7 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $session_stmt->execute();
         $session_stmt->close();
         
-        // Set session variables
         $_SESSION['farmer_id'] = $farmer['farmer_id'];
         $_SESSION['farmer_name'] = $farmer['name'];
         $_SESSION['farmer_email'] = $farmer['email'];
@@ -61,7 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['farmer_area'] = $farmer['area'];
         $_SESSION['session_token'] = $session_token;
         
-        // Log login activity
         log_activity($conn, 'farmer', $farmer['farmer_id'], 'login', 'farmer', $farmer['farmer_id'], "Farmer logged in");
         
         echo json_encode(['success' => true, 'message' => 'Login successful!']);

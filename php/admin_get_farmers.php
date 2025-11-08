@@ -4,14 +4,12 @@ require_once 'db_connect.php';
 
 header('Content-Type: application/json');
 
-// Check if admin is logged in
 if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
     exit;
 }
 
 try {
-    // Fetch all farmers
     $query = "SELECT farmer_id, name, email, region, soil_type, area, is_blocked, registration_date as created_at FROM farmers ORDER BY registration_date DESC";
     $result = $conn->query($query);
     

@@ -1,27 +1,20 @@
-// Form Validation Functions for AgroConnect
-
-// Email validation
 function validateEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(String(email).toLowerCase());
 }
 
-// Password validation (minimum 6 characters)
 function validatePassword(password) {
     return password.length >= 6;
 }
 
-// Number validation
 function validateNumber(value) {
     return !isNaN(value) && parseFloat(value) > 0;
 }
 
-// Required field validation
 function validateRequired(value) {
     return value.trim() !== '';
 }
 
-// Display error message
 function showError(inputElement, message) {
     const formGroup = inputElement.parentElement;
     let errorElement = formGroup.querySelector('.form-error');
@@ -36,7 +29,6 @@ function showError(inputElement, message) {
     inputElement.style.borderColor = '#DC2626';
 }
 
-// Clear error message
 function clearError(inputElement) {
     const formGroup = inputElement.parentElement;
     const errorElement = formGroup.querySelector('.form-error');
@@ -48,7 +40,6 @@ function clearError(inputElement) {
     inputElement.style.borderColor = '#E5E7EB';
 }
 
-// Validate farmer registration form
 function validateFarmerRegistration(formData) {
     const errors = [];
     
@@ -79,7 +70,6 @@ function validateFarmerRegistration(formData) {
     return errors;
 }
 
-// Validate login form
 function validateLogin(formData) {
     const errors = [];
     
@@ -94,7 +84,6 @@ function validateLogin(formData) {
     return errors;
 }
 
-// Validate crop form
 function validateCrop(formData) {
     const errors = [];
     
@@ -113,7 +102,6 @@ function validateCrop(formData) {
     return errors;
 }
 
-// Create toast container if it doesn't exist
 function getToastContainer() {
     let container = document.querySelector('.toast-container');
     if (!container) {
@@ -124,11 +112,9 @@ function getToastContainer() {
     return container;
 }
 
-// Show toast notification
 function showAlert(message, type = 'info') {
     const container = getToastContainer();
     
-    // Icon based on type
     const icons = {
         success: '✓',
         error: '✕',
@@ -145,36 +131,30 @@ function showAlert(message, type = 'info') {
     
     container.appendChild(toast);
     
-    // Auto-remove after 4 seconds
     setTimeout(() => {
         toast.classList.add('removing');
         setTimeout(() => {
             toast.remove();
-        }, 300); // Wait for animation to complete
+        }, 300);
     }, 4000);
 }
 
-// Remove all alerts
 function removeAlerts() {
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => alert.remove());
 }
 
-// Handle form submission with validation
 async function handleFormSubmit(formElement, validationFunction, submitUrl) {
     formElement.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Clear previous errors
         const inputs = formElement.querySelectorAll('input, select, textarea');
         inputs.forEach(input => clearError(input));
         removeAlerts();
         
-        // Get form data
         const formData = new FormData(formElement);
         const data = Object.fromEntries(formData.entries());
         
-        // Validate
         const errors = validationFunction(data);
         
         if (errors.length > 0) {
@@ -187,7 +167,6 @@ async function handleFormSubmit(formElement, validationFunction, submitUrl) {
             return;
         }
         
-        // Submit form
         try {
             const response = await fetch(submitUrl, {
                 method: 'POST',
@@ -200,7 +179,6 @@ async function handleFormSubmit(formElement, validationFunction, submitUrl) {
                 showAlert(result.message, 'success');
                 formElement.reset();
                 
-                // Optional: Redirect or callback
                 if (formElement.dataset.redirectUrl) {
                     setTimeout(() => {
                         window.location.href = formElement.dataset.redirectUrl;
@@ -214,9 +192,8 @@ async function handleFormSubmit(formElement, validationFunction, submitUrl) {
             console.error('Form submission error:', error);
         }
     });
-}
+});
 
-// Real-time validation on input
 function addRealTimeValidation(formElement) {
     const inputs = formElement.querySelectorAll('input, select, textarea');
     
