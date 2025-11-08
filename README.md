@@ -20,6 +20,12 @@ The application features a modern, professional UI with a clean blue and white c
 
 ---
 
+## 🎥 Demo Video
+
+[![Demo Video](https://img.youtube.com/vi/1NuNgMN9_2E/0.jpg)](https://youtu.be/1NuNgMN9_2E)
+
+---
+
 ## ✅ Features
 
 ### 👨‍🌾 Farmer
