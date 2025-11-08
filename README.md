@@ -553,7 +553,7 @@ All passwords are securely hashed using bcrypt.
 
 For issues, questions, or contributions:
 - Create an issue in the repository
-- Contact: [Your contact information]
+- Contact: sagardatkhile.official@gmail.com
 - Documentation: This README file
 
 ---
@@ -606,4 +606,3 @@ http://localhost/agroconnect/php/db_connect.php
 
 **Built with ❤️ for the farming community**
 
-*AgroConnect - Empowering Farmers Through Technology*
