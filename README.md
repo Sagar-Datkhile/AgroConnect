@@ -148,6 +148,7 @@ All passwords are securely hashed using bcrypt.
 For issues, questions, or contributions:
 - Create an issue in the repository
 - Contact: sagardatkhile.official@gmail.com
+- LinkedIn: https://www.linkedin.com/in/sagar-datkhile/
 - Documentation: This README file
 
 ---
